@@ -44,34 +44,40 @@ func find(node *html.Node, tag string) *html.Node {
 	return result
 }
 
-func findWithAttr(node *html.Node, tag, key string, value interface{}) *html.Node {
+func hasAttr(n *html.Node, attr Attr) bool {
+	has := false
+	for _, a := range n.Attr {
+		switch val := attr.Val.(type) {
+		case string:
+			if a.Key == attr.Key && a.Val == val {
+				has = true
+			}
+		case regexp.Regexp:
+			if a.Key == attr.Key && val.FindString(a.Val) != "" {
+				has = true
+			}
+		default:
+			log.Fatal("Unsupported type")
+		}
+	}
+	return has
+}
+
+func findWithAttr(node *html.Node, tag string, attrs []Attr) *html.Node {
 	var result *html.Node
-	var visit func(*html.Node)
-	switch value := value.(type) {
-	case string:
-		visit = func(n *html.Node) {
-			if n.Type == html.ElementNode && n.Data == tag {
-				for _, attr := range n.Attr {
-					if attr.Key == key && attr.Val == value {
-						result = n
-						return
-					}
+
+	visit := func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == tag {
+			match := true
+			for _, attr := range attrs {
+				if !hasAttr(n, attr) {
+					match = false
 				}
 			}
-		}
-	case regexp.Regexp:
-		visit = func(n *html.Node) {
-			if n.Type == html.ElementNode && n.Data == tag {
-				for _, attr := range n.Attr {
-					if attr.Key == key && value.FindString(attr.Val) != "" {
-						result = n
-						return
-					}
-				}
+			if match {
+				result = n
 			}
 		}
-	default:
-		log.Fatal("Unsupported type")
 	}
 
 	forEachNode(node, visit, nil)
@@ -89,28 +95,19 @@ func findAll(node *html.Node, tag string) []*html.Node {
 	return resultList
 }
 
-func findAllWithAttr(node *html.Node, tag, key string, value interface{}) []*html.Node {
+func findAllWithAttr(node *html.Node, tag string, attrs []Attr) []*html.Node {
 	var resultList []*html.Node
-	var visit func(*html.Node)
-	switch value := value.(type) {
-	case string:
-		visit = func(n *html.Node) {
-			if n.Type == html.ElementNode && n.Data == tag {
-				for _, attr := range n.Attr {
-					if attr.Key == key && attr.Val == value {
-						resultList = append(resultList, n)
-					}
+
+	visit := func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == tag {
+			match := true
+			for _, attr := range attrs {
+				if !hasAttr(n, attr) {
+					match = false
 				}
 			}
-		}
-	case regexp.Regexp:
-		visit = func(n *html.Node) {
-			if n.Type == html.ElementNode && n.Data == tag {
-				for _, attr := range n.Attr {
-					if attr.Key == key && value.FindString(attr.Val) != "" {
-						resultList = append(resultList, n)
-					}
-				}
+			if match {
+				resultList = append(resultList, n)
 			}
 		}
 	}

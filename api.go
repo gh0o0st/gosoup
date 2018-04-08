@@ -6,19 +6,25 @@ import (
 	"golang.org/x/net/html"
 )
 
-//Soup represent a HTML node
-type Soup struct {
+//Attr
+type Attr struct {
+	Key string
+	Val interface{}
+}
+
+//Node represent a HTML node
+type Node struct {
 	*html.Node
 }
 
-//child soup of string c
-func (s *Soup) Child(c string) (*Soup, error) {
+//child Node of string c
+func (s *Node) Child(c string) (*Node, error) {
 	n, err := child(s.Node, c)
-	return newSoup(n), err
+	return newNode(n), err
 }
 
 //get node atrributes
-func (s *Soup) Attr(key string) (string, bool) {
+func (s *Node) Attr(key string) (string, bool) {
 	for _, attr := range s.Node.Attr {
 		if attr.Key == key {
 			return attr.Val, true
@@ -26,53 +32,49 @@ func (s *Soup) Attr(key string) (string, bool) {
 	}
 	return "", false
 }
-func newSoup(n *html.Node) *Soup {
-	return &Soup{Node: n}
+func newNode(n *html.Node) *Node {
+	return &Node{Node: n}
 }
 
 //basicly a wrapper of html.Parse
-func Parse(r io.Reader) (*Soup, error) {
+func Parse(r io.Reader) (*Node, error) {
 	n, err := html.Parse(r)
 	if err != nil {
 		return nil, err
 	}
-	s := newSoup(n)
+	s := newNode(n)
 	return s, nil
 }
 
 //get all the text of the html
-func (s *Soup) GetText() string {
+func (s *Node) GetText() string {
 	return getText(s.Node)
 }
 
-//find html node with specific tag
-func (s *Soup) Find(tag string) *Soup {
-	node := find(s.Node, tag)
-	return newSoup(node)
-}
-
-//find all the node of specific tag
-func (s *Soup) FindAll(tag string) []*Soup {
-	nList := findAll(s.Node, tag)
-	var soupList []*Soup
-	for _, n := range nList {
-		soupList = append(soupList, newSoup(n))
+//Find finds node with specific tag and attributes, attrs can be nil, in which case just finding node for specific tag
+func (s *Node) Find(tag string, attrs []Attr) *Node {
+	if attrs == nil {
+		//no attrs presented
+		return newNode(find(s.Node, tag))
+	} else {
+		return newNode(findWithAttr(s.Node, tag, attrs))
 	}
-	return soupList
+	return nil
 }
 
-//find node with specific tag of certain attributes
-func (s *Soup) FindWithAttr(tag, key string, val interface{}) *Soup {
-	node := findWithAttr(s.Node, tag, key, val)
-	return newSoup(node)
-}
+//
+func (s *Node) FindAll(tag string, attrs []Attr) (res []*Node) {
+	var nodes []*html.Node
+	if attrs == nil {
+		//no attrs presented
+		nodes = findAll(s.Node, tag)
 
-//find all the nodes with specific tag of certain attributes
-func (s *Soup) FindAllWithAttr(tag, key string, val interface{}) []*Soup {
-	var soupList []*Soup
-	nList := findAllWithAttr(s.Node, tag, key, val)
-	for _, n := range nList {
-		soupList = append(soupList, newSoup(n))
+	} else {
+		nodes = findAllWithAttr(s.Node, tag, attrs)
+
 	}
-	return soupList
+	for _, n := range nodes {
+		res = append(res, newNode(n))
+	}
+	return res
 }
