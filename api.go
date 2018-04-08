@@ -18,13 +18,13 @@ type Node struct {
 }
 
 //child Node of string c
-func (s *Node) Child(c string) (*Node, error) {
+func (s *Node) GetChild(c string) (*Node, error) {
 	n, err := child(s.Node, c)
 	return newNode(n), err
 }
 
 //get node atrributes
-func (s *Node) Attr(key string) (string, bool) {
+func (s *Node) AttrValue(key string) (string, bool) {
 	for _, attr := range s.Node.Attr {
 		if attr.Key == key {
 			return attr.Val, true
@@ -52,8 +52,8 @@ func (s *Node) GetText() string {
 }
 
 //Find finds node with specific tag and attributes, attrs can be nil, in which case just finding node for specific tag
-func (s *Node) Find(tag string, attrs []Attr) *Node {
-	if attrs == nil {
+func (s *Node) Find(tag string, attrs ...Attr) *Node {
+	if len(attrs) == 0 {
 		//no attrs presented
 		return newNode(find(s.Node, tag))
 	} else {
@@ -63,9 +63,9 @@ func (s *Node) Find(tag string, attrs []Attr) *Node {
 }
 
 //
-func (s *Node) FindAll(tag string, attrs []Attr) (res []*Node) {
+func (s *Node) FindAll(tag string, attrs ...Attr) (res []*Node) {
 	var nodes []*html.Node
-	if attrs == nil {
+	if len(attrs) == 0 {
 		//no attrs presented
 		nodes = findAll(s.Node, tag)
 
